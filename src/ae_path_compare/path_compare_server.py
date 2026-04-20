@@ -52,8 +52,9 @@ class PathCompareServer:
 				received_images = received_array.reshape(data['shape'])
 				pil_images = [Image.fromarray(img) for img in received_images]
 				#result_list =
-				cmp_res = {k: self.pc.compare_paths(v, pil_images)[1] for k, v in self.path_refs.items()}
+				cmp_res = {k: self.pc.fit_cur_path_to_ref_path(v, pil_images)[1] for k, v in self.path_refs.items()}
 				#max(cmp_res, key=cmp_res.get)
+				print(cmp_res)
 				best_match = max(cmp_res.items(), key=lambda k: k[1])
 				response = {
 					'best_match_ref': best_match[0],
