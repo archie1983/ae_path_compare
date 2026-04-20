@@ -89,9 +89,9 @@ def capture_from_ai2thor():
 	# Simulate a 640x480 RGB image
 	return np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
 
+if __name__ == "__main__":
+	# Create agent and connect to Jetson
+	agent = PathCompareClient(jetson_ip="192.168.1.100", port=5555)
 
-# Create agent and connect to Jetson
-agent = PathCompareClient(jetson_ip="192.168.1.100", port=5555)
-
-# Start navigation
-agent.navigate_with_feedback(capture_from_ai2thor, max_steps=50)
+	# Start navigation
+	agent.navigate_with_feedback(capture_from_ai2thor, max_steps=50)
