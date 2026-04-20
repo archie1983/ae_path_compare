@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import time
 
-class NavigationAgent:
+class PathCompareClient:
 	def __init__(self, jetson_ip, port=5555):
 		self.context = zmq.Context()
 		self.socket = self.context.socket(zmq.REQ)  # REQuest socket
@@ -92,7 +92,7 @@ def capture_from_ai2thor():
 
 
 # Create agent and connect to Jetson
-agent = NavigationAgent(jetson_ip="192.168.1.100", port=5555)
+agent = PathCompareClient(jetson_ip="192.168.1.100", port=5555)
 
 # Start navigation
 agent.navigate_with_feedback(capture_from_ai2thor, max_steps=50)

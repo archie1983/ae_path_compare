@@ -59,3 +59,6 @@ class PathCompareServer:
 
 			self.socket.send_pyobj(response)
 			print(f"Sent response: confidence={confidence_analysis['combined_score']:.3f}")
+
+if __name__ == "__main__":
+	pcs = PathCompareServer
