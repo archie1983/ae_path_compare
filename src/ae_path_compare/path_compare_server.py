@@ -1,11 +1,11 @@
 import zmq
 import numpy as np
 from PIL import Image
-import json
+from .path_compare import PathCompare
 
 class PathCompareServer:
-	def __init__(self, path_compare_instance, port=5555):
-		self.pc = path_compare_instance
+	def __init__(self, port=5555):
+		self.pc = PathCompare()
 		self.port = port
 
 		# Set up ZeroMQ with REP (REPly) socket
@@ -14,6 +14,7 @@ class PathCompareServer:
 		self.socket.bind(f"tcp://*:{self.port}")
 
 		print(f"Path Compare server running on port {self.port}, waiting for images...")
+		self.path_refs = {}
 
 	# def __init__(self, path_compare_instance, image_port=5555, response_port=5556):
 	# 	self.pc = path_compare_instance
@@ -34,31 +35,42 @@ class PathCompareServer:
 			# 1. Receive the image data
 			data = self.socket.recv_pyobj()  # This BLOCKS until a request arrives
 
-			# 2. Process the image
-			received_array = np.frombuffer(data['bytes'], dtype=data['dtype'])
-			received_image = received_array.reshape(data['shape'])
-
-			# Convert to PIL Image (adjust color channels as needed)
-			if received_image.shape[2] == 3:
-				pil_image = Image.fromarray(received_image[:, :, ::-1])  # BGR to RGB
-			else:
-				pil_image = Image.fromarray(received_image)
-
-			# 3. Get confidence using your PathCompare class
-			confidence_analysis = self.pc.get_view_confidence(pil_image)
-
-			# 4. Send the response back
-			response = {
-				'confidence_score': confidence_analysis['combined_score'],
-				'peak_index': confidence_analysis['peak_index'],
-				'peak_confidence': confidence_analysis['peak_confidence'],
-				'entropy': confidence_analysis['entropy'],
-				'is_confident': confidence_analysis['is_confident'],
-				'status': 'success'
-			}
-
+			if (data['action'] == 'store_ref_path'):
+				# 2. Process the images
+				received_array = np.frombuffer(data['bytes'], dtype=data['dtype'])
+				received_images = received_array.reshape(data['shape'])
+				pil_images = [Image.fromarray(img) for img in received_images]
+				path_id = data['path_id']
+				self.path_refs[path_id] = pil_images
+				# Send the response back
+				response = {
+					'success': True
+				}
+			elif(data['action'] == 'cmp_path'):
+				# 2. Process the images
+				received_array = np.frombuffer(data['bytes'], dtype=data['dtype'])
+				received_images = received_array.reshape(data['shape'])
+				pil_images = [Image.fromarray(img) for img in received_images]
+				#result_list =
+				cmp_res = {k: self.pc.compare_paths(v, pil_images)[1] for k, v in self.path_refs.items()}
+				#max(cmp_res, key=cmp_res.get)
+				best_match = max(cmp_res.items(), key=lambda k: k[1])
+				response = {
+					'best_match_ref': best_match[0],
+					'best_match_score': best_match[1],
+					'success': True
+				}
+				#for k, v in self.path_refs.items():
+				#	cmp_res = self.pc.compare_paths(v, pil_images)
 			self.socket.send_pyobj(response)
-			print(f"Sent response: confidence={confidence_analysis['combined_score']:.3f}")
+
+
+			# # Convert to PIL Image (adjust color channels as needed)
+			# if received_image.shape[2] == 3:
+			# 	pil_image = Image.fromarray(received_image[:, :, ::-1])  # BGR to RGB
+			# else:
+			# 	pil_image = Image.fromarray(received_image)
 
 if __name__ == "__main__":
-	pcs = PathCompareServer
+	pcs = PathCompareServer()
+	pcs.run()

@@ -9,21 +9,23 @@ class PathCompareClient:
 		self.socket.connect(f"tcp://{jetson_ip}:{port}")
 		print(f"Connected to Jetson at {jetson_ip}:{port}")
 
-	def send_image_and_get_confidence(self, image_np):
+	def store_ref_path(self, path_imgs, path_id="?"):
 		"""
-		Send an image to Jetson and wait for confidence analysis.
+		Send an a collection of images, representing a reference path, to server.
 
 		Args:
-			image_np: numpy array (H, W, C) in BGR order (typical from OpenCV/AI2-THOR)
+			image_np: numpy array (x, H, W, C) in BGR order (typical from OpenCV/AI2-THOR)
 
 		Returns:
-			dict with confidence metrics, or None if error
+			success flag or None if error
 		"""
-		# Serialize the image
+		# Serialize the images
 		data = {
-			'shape': image_np.shape,
-			'dtype': str(image_np.dtype),
-			'bytes': image_np.tobytes()
+			'shape': path_imgs.shape,
+			'dtype': str(path_imgs.dtype),
+			'bytes': path_imgs.tobytes(),
+			'path_id': path_id,
+			'action': "store_ref_path"
 		}
 
 		# Send request
@@ -37,7 +39,7 @@ class PathCompareClient:
 			print(f"Error receiving response: {e}")
 			return None
 
-	def navigate_with_feedback(self, get_image_func, max_steps=100):
+	def qry_path_similarity(self, path_imgs):
 		"""
 		Main navigation loop with real-time confidence feedback.
 
@@ -45,53 +47,46 @@ class PathCompareClient:
 			get_image_func: Function that captures current FPV image from AI2-THOR
 			max_steps: Maximum number of steps to take
 		"""
-		for step in range(max_steps):
-			# 1. Capture current view
-			current_image = get_image_func()  # Returns numpy array
+		data = {
+			'shape': path_imgs.shape,
+			'dtype': str(path_imgs.dtype),
+			'bytes': path_imgs.tobytes(),
+			'action': "cmp_path"
+		}
 
-			# 2. Send to Jetson and get confidence
-			result = self.send_image_and_get_confidence(current_image)
+		# Send request
+		self.socket.send_pyobj(data)
 
-			if result and result['status'] == 'success':
-				confidence = result['confidence_score']
+		# Wait for response (this BLOCKS until Jetson replies)
+		try:
+			response = self.socket.recv_pyobj()
+			return response
+		except zmq.ZMQError as e:
+			print(f"Error receiving response: {e}")
+			return None
 
-				# 3. Use confidence to guide navigation
-				if confidence > 0.7:
-					print(f"✅ Step {step}: High confidence ({confidence:.2f}) - continue")
-				# Continue with planned movement
-				# agent.move_forward()
-
-				elif confidence > 0.4:
-					print(f"⚠️ Step {step}: Medium confidence ({confidence:.2f}) - proceed with caution")
-				# Slow down, look around more
-				# agent.move_forward(speed=0.5)
-
-				else:
-					print(f"❌ Step {step}: Low confidence ({confidence:.2f}) - LOST!")
-				# Trigger recovery behavior
-				# agent.stop_and_reorient()
-				# agent.explore_until_recovered()
-
-			# Optional: Store confidence history for trajectory analysis
-			# self.confidence_history.append(confidence)
-
-			else:
-				print(f"Step {step}: Failed to get confidence from Jetson")
-			# Implement fallback behavior
-
-			# Small delay to avoid overwhelming the system
-			time.sleep(0.05)
+		# Small delay to avoid overwhelming the system
+		time.sleep(0.05)
 
 
 # Example usage
-def capture_from_ai2thor():
+def gen_n_imgs(img_num):
 	"""Replace with your actual AI2-THOR frame capture"""
-	# Simulate a 640x480 RGB image
-	return np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
+	# Simulate a 64x64 RGB image
+	return np.random.randint(0, 255, (img_num, 64, 64, 3), dtype=np.uint8)
+
+def gen_1_img():
+	"""Replace with your actual AI2-THOR frame capture"""
+	# Simulate a 64x64 RGB image
+	return np.random.randint(0, 255, (64, 64, 3), dtype=np.uint8)
 
 if __name__ == "__main__":
 	# Create agent and connect to Jetson
-	agent = PathCompareClient(jetson_ip="192.168.1.100", port=5555)
+	agent = PathCompareClient(jetson_ip="192.168.0.109", port=5555)
 
-	# Start navigation
-	agent.navigate_with_feedback(capture_from_ai2thor, max_steps=50)
+	# store reference path images
+	print(agent.store_ref_path(gen_n_imgs(10), "bathroom"))
+	print(agent.store_ref_path(gen_n_imgs(10), "kitchen"))
+	print(agent.store_ref_path(gen_n_imgs(10), "living_room"))
+	print(agent.qry_path_similarity(gen_n_imgs(3)))
+
