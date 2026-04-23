@@ -1,6 +1,6 @@
 import zmq
 import numpy as np
-import time
+import time, cv2, os
 
 class PathCompareClient:
 	def __init__(self, jetson_ip, port=5555):
@@ -27,6 +27,15 @@ class PathCompareClient:
 			'path_id': path_id,
 			'action': "store_ref_path"
 		}
+
+		## debug
+		path_id = str(path_id)
+		os.makedirs(path_id, exist_ok=True)
+		cnt = 0
+		for img in path_imgs:
+			cnt += 1
+			cv2.imwrite(os.path.join(path_id, str(cnt) + ".png"), img)
+		## /debug
 
 		# Send request
 		self.socket.send_pyobj(data)

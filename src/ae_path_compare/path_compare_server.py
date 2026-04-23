@@ -1,4 +1,4 @@
-import zmq
+import zmq, os, cv2
 import numpy as np
 from PIL import Image
 from .path_compare import PathCompare
@@ -46,15 +46,25 @@ class PathCompareServer:
 				response = {
 					'success': True
 				}
+				## debug
+				path_id = str(path_id)
+				os.makedirs(path_id, exist_ok=True)
+				cnt = 0
+				for img in received_images:
+					cnt += 1
+					cv2.imwrite(os.path.join(path_id, str(cnt) + ".png"), img)
+				## /debug
+
 			elif(data['action'] == 'cmp_path'):
 				# 2. Process the images
 				received_array = np.frombuffer(data['bytes'], dtype=data['dtype'])
 				received_images = received_array.reshape(data['shape'])
+				# get x images from the received (x, 64, 64, 3) tensor. This will be our path to compare
 				pil_images = [Image.fromarray(img) for img in received_images]
-				#result_list =
+				# compare that path against all reference paths
 				cmp_res = {k: self.pc.fit_cur_path_to_ref_path(v, pil_images)[1] for k, v in self.path_refs.items()}
-				#max(cmp_res, key=cmp_res.get)
-				print(cmp_res)
+				#print(cmp_res)
+				# find the best match and return both the score and the reference match buffer
 				best_match = max(cmp_res.items(), key=lambda k: k[1])
 				response = {
 					'best_match_ref': best_match[0],
