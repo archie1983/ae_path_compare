@@ -63,6 +63,15 @@ class PathCompareClient:
 			'action': "cmp_path"
 		}
 
+		## debug
+		path_id = "tmp_cmp"
+		os.makedirs(path_id, exist_ok=True)
+		cnt = 0
+		for img in path_imgs:
+			cnt += 1
+			cv2.imwrite(os.path.join(path_id, str(cnt) + ".png"), img)
+		## /debug
+
 		# Send request
 		self.socket.send_pyobj(data)
 

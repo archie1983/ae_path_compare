@@ -71,6 +71,14 @@ class PathCompareServer:
 					'best_match_score': best_match[1],
 					'success': True
 				}
+				## debug
+				path_id = "tmp_cmp"
+				os.makedirs(path_id, exist_ok=True)
+				cnt = 0
+				for img in received_images:
+					cnt += 1
+					cv2.imwrite(os.path.join(path_id, str(cnt) + ".png"), img)
+				## /debug
 				#for k, v in self.path_refs.items():
 				#	cmp_res = self.pc.compare_paths(v, pil_images)
 			self.socket.send_pyobj(response)
