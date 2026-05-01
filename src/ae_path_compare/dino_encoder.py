@@ -125,6 +125,14 @@ class DINOEncoder:
 		probs = F.softmax(similarities, dim=-1)
 		return probs
 
+	def compare_paths_mean(self, ref_path, cur_path):
+		ref_path_embeds = self.encode_batch(ref_path)
+		cur_path_embeds = self.encode_batch(cur_path)
+
+		ref_mean = ref_path_embeds.mean(dim=0)
+		cur_mean = cur_path_embeds.mean(dim=0)
+		return F.cosine_similarity(ref_mean, cur_mean, dim=0)
+
 	def extract_number(self, filename):
 		# Extract the number from the filename (assuming it's the step count)
 		# This regex looks for digits at the beginning, end, or between non-digits
