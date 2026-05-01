@@ -64,9 +64,10 @@ class PathCompareServer:
 				pil_images = [Image.fromarray(img) for img in received_images]
 				# compare that path against all reference paths
 				if self.use_dino:
-					cmp_res = {k: self.pc.fit_cur_path_to_ref_path(v, pil_images)[1] for k, v in self.path_refs.items()}
-				else:
 					cmp_res = {k: float(self.pc.compare_paths_mean(v, pil_images)) for k, v in self.path_refs.items()}
+				else:
+					cmp_res = {k: self.pc.fit_cur_path_to_ref_path(v, pil_images)[1] for k, v in self.path_refs.items()}
+					
 				#print(cmp_res)
 				# find the best match and return both the score and the reference match buffer
 				best_match = max(cmp_res.items(), key=lambda k: k[1])
