@@ -2,6 +2,7 @@ import torch, glob, re
 from transformers import AutoImageProcessor, AutoModel
 from PIL import Image
 import numpy as np
+import torch.nn.functional as F
 
 class DINOEncoder:
 	def __init__(self, device="cuda:0"):
@@ -106,6 +107,23 @@ class DINOEncoder:
 		"""
 		embeddings = [self.encode_image(img) for img in images]
 		return torch.stack(embeddings)
+
+	def compare_paths(self, ref_path, cur_path):
+		#(ref_path_embeds, cur_path_embeds) = self.get_embeddings(ref_path, cur_path)
+		# print(ref_path_embeds)
+		ref_path_embeds = self.encode_batch(ref_path)
+		cur_path_embeds = self.encode_batch(cur_path)
+
+		ideal_path_normalized = F.normalize(ref_path_embeds, dim=1)
+		current_path_normalized = F.normalize(cur_path_embeds, dim=1)
+
+		# Get similarity to all reference frames in one matrix multiplication
+		similarities = torch.mm(current_path_normalized, ideal_path_normalized.t()).squeeze()
+
+		# logits[range(len(logits)), range(len(logits[0]))] = 0 # we're not interested in each image compared to itself, so set the diagonal to 0
+		# 4. Convert logits to probabilities using Softmax
+		probs = F.softmax(similarities, dim=-1)
+		return probs
 
 	def extract_number(self, filename):
 		# Extract the number from the filename (assuming it's the step count)

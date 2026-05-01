@@ -5,28 +5,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import requests
 from PIL import Image
-from transformers import CLIPProcessor, CLIPModel
 
 from .distribution_confidence import DistributionConfidence
-from .DINOEncoder import DINOEncoder
+from .dino_encoder import DINOEncoder
+from .clip_encoder import CLIPEncoder
 
 class PathCompare:
 	def __init__(self, use_dino = True):
 		if use_dino:
 			self.encoder = DINOEncoder()
 		else:
-			self.device = "cuda:0"
-			# We will use the base model from OpenAI, loaded via Hugging Face.
-			model_name = "openai/clip-vit-base-patch32"
-			# The CLIPProcessor handles both image preprocessing (resizing, normalizing)
-			# and text tokenization.
-			self.processor = CLIPProcessor.from_pretrained(model_name)
-			# The CLIPModel contains:
-			# 1. model.get_text_features()
-			# 2. model.get_image_features()
-			# although we realistically will only need image one
-			self.model = CLIPModel.from_pretrained(model_name).to(self.device)
-			print("CLIP Processor and Model loaded successfully.")
+			self.encoder = CLIPEncoder()
 		self.confidence = DistributionConfidence()
 
 	def extract_number(self, filename):
@@ -50,41 +39,13 @@ class PathCompare:
 	def load_alien_path(self):
 		return self.load_images("/home/hp20024/robotics/ref_path_embedding/hab_img2/path3/path3_*.png")
 
-	def get_embeddings(self, ref_path, cur_path, use_dino = True):
-		if use_dino:
-			ref_path_embeds = self.encoder.encode_batch(ref_path)
-			cur_path_embeds = self.encoder.encode_batch(cur_path)
-		else:
-			captions = [""]
-			ref_path_inputs = self.processor(text=captions, images=ref_path, return_tensors="pt", padding=True)
-			cur_path_inputs = self.processor(text=captions, images=cur_path, return_tensors="pt", padding=True)
-
-			ref_path_inputs = {k: v.to(self.device) for k, v in ref_path_inputs.items()}  # Move to device
-			cur_path_inputs = {k: v.to(self.device) for k, v in cur_path_inputs.items()}  # Move to device
-
-			# get embeddings
-			with torch.no_grad():
-				ref_path_outputs = self.model(**ref_path_inputs)
-				ref_path_embeds = ref_path_outputs.image_embeds
-				cur_path_outputs = self.model(**cur_path_inputs)
-				cur_path_embeds = cur_path_outputs.image_embeds
+	def get_embeddings(self, ref_path, cur_path):
+		ref_path_embeds = self.encoder.encode_batch(ref_path)
+		cur_path_embeds = self.encoder.encode_batch(cur_path)
 		return ref_path_embeds, cur_path_embeds
 
 	def compare_paths(self, ref_path, cur_path):
-		(ref_path_embeds, cur_path_embeds) = self.get_embeddings(ref_path, cur_path)
-		# print(ref_path_embeds)
-
-		ideal_path_normalized = F.normalize(ref_path_embeds, dim=1)
-		current_path_normalized = F.normalize(cur_path_embeds, dim=1)
-
-		# Get similarity to all reference frames in one matrix multiplication
-		similarities = torch.mm(current_path_normalized, ideal_path_normalized.t()).squeeze()
-
-		logit_scale = self.model.logit_scale.exp()
-		logits = similarities * logit_scale
-		# logits[range(len(logits)), range(len(logits[0]))] = 0 # we're not interested in each image compared to itself, so set the diagonal to 0
-		# 4. Convert logits to probabilities using Softmax
-		probs = F.softmax(logits, dim=-1)
+		probs = self.encoder.compare_paths(ref_path, cur_path)
 		return probs
 
 	def fit_single_img_to_ref_path(self, ref_path, img):
