@@ -4,8 +4,8 @@ from PIL import Image
 from .path_compare import PathCompare
 
 class PathCompareServer:
-	def __init__(self, port=5555):
-		self.pc = PathCompare()
+	def __init__(self, port=5555, use_dino = True):
+		self.pc = PathCompare(use_dino)
 		self.port = port
 
 		# Set up ZeroMQ with REP (REPly) socket
