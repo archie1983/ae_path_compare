@@ -3,6 +3,7 @@ from transformers import AutoImageProcessor, AutoModel
 from PIL import Image
 import numpy as np
 import torch.nn.functional as F
+from collections.abc import Iterable
 
 class DINOEncoder:
 	def __init__(self, device="cuda:0"):
@@ -107,6 +108,18 @@ class DINOEncoder:
 		"""
 		embeddings = [self.encode_image(img) for img in images]
 		return torch.stack(embeddings)
+
+	def encode_batch_mean(self, images):
+		path_embeds_cls = self.encode_batch(images)
+		path_embeds_mean = path_embeds_cls.mean(dim=0)
+		return path_embeds_mean
+
+	def compare_mean_embeddings(self, mean_embeds1, mean_embeds2):
+		# if we have a set of embeddings to compare, then compare all, otherwise just the one
+		if isinstance(mean_embeds1, Iterable):
+			return {F.cosine_similarity(me, mean_embeds2, dim=0) for me in mean_embeds1}
+		else:
+			return F.cosine_similarity(mean_embeds1, mean_embeds2, dim=0)
 
 	def compare_paths(self, ref_path, cur_path):
 		#(ref_path_embeds, cur_path_embeds) = self.get_embeddings(ref_path, cur_path)
