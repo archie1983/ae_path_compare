@@ -122,15 +122,15 @@ class DistributionConfidence:
 
 		return (score_good / score_cnt)
 
-# Example usage
-confidence = DistributionConfidence()
-
-dist1 = torch.tensor([0.01, 0.01, 0.90, 0.04, 0.04])
-dist2 = torch.tensor([0.2, 0.35, 0.36, 0.15, 0.12])
-
-print("Distribution 1 Analysis:")
-print(confidence.analyze(dist1))
-print("decision: ", confidence.agent_decision(confidence.analyze(dist1)))
-print("\nDistribution 2 Analysis:")
-print(confidence.analyze(dist2))
-print("decision: ", confidence.agent_decision(confidence.analyze(dist2)))
+# # Example usage
+# confidence = DistributionConfidence()
+#
+# dist1 = torch.tensor([0.01, 0.01, 0.90, 0.04, 0.04])
+# dist2 = torch.tensor([0.2, 0.35, 0.36, 0.15, 0.12])
+#
+# print("Distribution 1 Analysis:")
+# print(confidence.analyze(dist1))
+# print("decision: ", confidence.agent_decision(confidence.analyze(dist1)))
+# print("\nDistribution 2 Analysis:")
+# print(confidence.analyze(dist2))
+# print("decision: ", confidence.agent_decision(confidence.analyze(dist2)))
