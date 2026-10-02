@@ -57,6 +57,12 @@ class PathCompare:
 	def compare_mean_path_embeddings(self, mean_embeds1, mean_embeds2):
 		return self.encoder.compare_mean_embeddings(mean_embeds1, mean_embeds2)
 
+	def get_single_img_embedding(self, img):
+		return self.encoder.encode_image(img)
+
+	def get_simple_batch_encoded_images(self, imgs_to_encode):
+		return self.encoder.encode_batch(imgs_to_encode)
+
 	def fit_single_img_to_ref_path(self, ref_path, img):
 		probs = self.compare_paths(ref_path, [img])
 		# print("Distribution 1 Analysis:")
