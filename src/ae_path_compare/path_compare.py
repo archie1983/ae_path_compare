@@ -63,6 +63,17 @@ class PathCompare:
 	def get_simple_batch_encoded_images(self, imgs_to_encode):
 		return self.encoder.encode_batch(imgs_to_encode)
 
+	def get_potentially_ambiguous_batch_embeddings(self, imgs_to_encode):
+		"""
+		Use this to encode a batch of images where a few of them might actually not belong in the collection passed
+		:param imgs_to_encode:
+		:return:
+		"""
+		return self.encoder.encode_potentially_ambiguous_batch(imgs_to_encode)
+
+	def get_mean_path_embedding_with_odds_filtered(self, imgs_to_encode):
+		return self.encode_potentially_ambiguous_batch_mean(imgs_to_encode)
+
 	def fit_single_img_to_ref_path(self, ref_path, img):
 		probs = self.compare_paths(ref_path, [img])
 		# print("Distribution 1 Analysis:")
