@@ -72,7 +72,7 @@ class PathCompare:
 		return self.encoder.encode_potentially_ambiguous_batch(imgs_to_encode)
 
 	def get_mean_path_embedding_with_odds_filtered(self, imgs_to_encode):
-		return self.encode_potentially_ambiguous_batch_mean(imgs_to_encode)
+		return self.encoder.encode_potentially_ambiguous_batch_mean(imgs_to_encode)
 
 	def fit_single_img_to_ref_path(self, ref_path, img):
 		probs = self.compare_paths(ref_path, [img])
