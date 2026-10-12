@@ -210,7 +210,7 @@ class DINOEncoder:
             #     fname = filenames[idx] if idx < len(filenames) else f"Index_{idx}"
             #     print(f"AE: [Vector Purge] throwing out: {fname} | Global agreement count: {agreement_counts[idx]}/{num_frames}")
 
-        return final_embeddings
+        return torch.stack(final_embeddings)
 
     def encode_potentially_ambiguous_batch(self, images):
         """
